@@ -1,0 +1,21 @@
+let lookback = 30d;
+let targetRoles = dynamic(["Global Administrator", "Company Administrator"]);
+AuditLogs
+| where TimeGenerated >= ago(lookback)
+| where OperationName has_any ("Add member to role", "Add eligible member to role", "Activate eligible assignment")
+| extend InitiatingUser = tostring(InitiatedBy.user.userPrincipalName)
+| extend InitiatingApp = tostring(InitiatedBy.app.displayName)
+| mv-expand TargetResources
+| extend TargetDisplayName = tostring(TargetResources.displayName)
+| extend ModifiedProps = tostring(TargetResources.modifiedProperties)
+| where TargetDisplayName has_any (targetRoles) or ModifiedProps has_any (targetRoles)
+| project
+    TimeGenerated,
+    OperationName,
+    Result,
+    InitiatingUser,
+    InitiatingApp,
+    TargetDisplayName,
+    CorrelationId,
+    ModifiedProps
+| order by TimeGenerated desc

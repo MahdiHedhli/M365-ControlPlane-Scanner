@@ -1,0 +1,31 @@
+let lookback = 30d;
+let riskyScopes = dynamic([
+    "Directory.ReadWrite.All",
+    "RoleManagement.ReadWrite.Directory",
+    "DeviceManagementManagedDevices.PrivilegedOperations.All",
+    "AppRoleAssignment.ReadWrite.All"
+]);
+AuditLogs
+| where TimeGenerated >= ago(lookback)
+| where OperationName has_any (
+    "Consent to application",
+    "Add delegated permission grant",
+    "Add app role assignment to service principal",
+    "Add delegated permission classification"
+)
+| extend InitiatingUser = tostring(InitiatedBy.user.userPrincipalName)
+| extend InitiatingApp = tostring(InitiatedBy.app.displayName)
+| mv-expand TargetResources
+| extend TargetDisplayName = tostring(TargetResources.displayName)
+| extend ModifiedProps = tostring(TargetResources.modifiedProperties)
+| where ModifiedProps has_any (riskyScopes) or TargetDisplayName has_any (riskyScopes)
+| project
+    TimeGenerated,
+    OperationName,
+    Result,
+    InitiatingUser,
+    InitiatingApp,
+    TargetDisplayName,
+    CorrelationId,
+    ModifiedProps
+| order by TimeGenerated desc

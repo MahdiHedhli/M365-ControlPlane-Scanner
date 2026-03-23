@@ -1,0 +1,21 @@
+let lookback = 14d;
+AuditLogs
+| where TimeGenerated >= ago(lookback)
+| where LoggedByService =~ "Core Directory" or LoggedByService =~ "Microsoft Intune"
+| where OperationName has_any ("wipe", "retire", "delete device", "remote lock")
+| extend InitiatingUser = tostring(InitiatedBy.user.userPrincipalName)
+| extend InitiatingApp = tostring(InitiatedBy.app.displayName)
+| mv-expand TargetResources
+| extend TargetDisplayName = tostring(TargetResources.displayName)
+| extend TargetType = tostring(TargetResources.type)
+| project
+    TimeGenerated,
+    OperationName,
+    Result,
+    LoggedByService,
+    InitiatingUser,
+    InitiatingApp,
+    TargetDisplayName,
+    TargetType,
+    CorrelationId
+| order by TimeGenerated desc
