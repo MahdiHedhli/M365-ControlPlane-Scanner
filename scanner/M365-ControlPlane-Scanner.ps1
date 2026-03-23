@@ -193,6 +193,8 @@ function Export-ReportCsv {
         [string]$Path,
 
         [Parameter(Mandatory)]
+        [AllowNull()]
+        [AllowEmptyCollection()]
         [object[]]$Items
     )
 
