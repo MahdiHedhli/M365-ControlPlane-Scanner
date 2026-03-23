@@ -392,7 +392,7 @@ foreach ($roleDefinition in $roleDefinitions) {
 }
 
 $privilegedRoleTemplateIds = @($privilegedRoleTemplateIds | Sort-Object -Unique)
-$roleAssignments = Invoke-GraphCollection -Uri "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?`$expand=principal,roleDefinition"
+$roleAssignments = Invoke-GraphCollection -Uri "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?`$expand=principal"
 
 foreach ($assignment in $roleAssignments) {
     $roleDefinition = $assignment.roleDefinition
