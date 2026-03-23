@@ -216,7 +216,7 @@ foreach ($roleName in $highRiskRoles) {
     }
     elseif ($roleName -ne "Global Administrator" -and $members.Count -gt 0) {
         $labels = Join-UniqueValues -Values ($members | ForEach-Object { Get-DisplayLabel -Object $_ })
-        Add-Finding -Severity High -Category "Identity & Privileged Access" -Title "$roleName has standing or currently active assignments" -Details "$($members.Count) principals currently hold $roleName: $labels" -Recommendation "Review every assignment, enforce just-in-time activation where possible, and document business justification for each principal."
+        Add-Finding -Severity High -Category "Identity & Privileged Access" -Title "$roleName has standing or currently active assignments" -Details "$($members.Count) principals currently hold ${roleName}: $labels" -Recommendation "Review every assignment, enforce just-in-time activation where possible, and document business justification for each principal."
     }
 }
 
