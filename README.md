@@ -50,6 +50,28 @@ This starter repo is designed to make that blast-radius question measurable inst
 
 > Some Conditional Access and Intune RBAC checks currently rely on Microsoft Graph beta endpoints because v1.0 coverage is still incomplete for the full blast-radius workflow.
 
+## 🧭 Identity Hardening Policies Most Tenants Miss
+
+The v2 scanner now evaluates a dedicated identity-hardening section focused on controls that reduce identity-workflow abuse, persistence, and admin re-entry paths:
+
+- Block security info registration for risky users
+- Block security info registration for risky sign-ins
+- Block high-risk users
+- Restrict Microsoft Graph and PowerShell access for unapproved users
+- Require phishing-resistant MFA for privileged roles, admin portals, and Azure Management API
+- Block Device Code Flow
+- Block Authentication Transfer
+- Require compliant devices or PAWs for privileged admins
+- Check token protection coverage
+- Flag Intune scripting exposure paths
+
+Each of these checks is reported as:
+
+- `CONFIGURED`
+- `MISSING`
+- `PARTIALLY CONFIGURED`
+- `MANUAL REVIEW REQUIRED`
+
 ## 🚨 Included Detection Pack
 
 The repository also includes ready-to-deploy KQL queries in [`detections/`](detections/) for:
@@ -63,8 +85,13 @@ The repository also includes ready-to-deploy KQL queries in [`detections/`](dete
 
 - Enforce Microsoft Entra PIM for all privileged roles
 - Require MFA and Conditional Access for every admin workflow
+- Require phishing-resistant authentication strength for privileged access
+- Block Device Code Flow and Authentication Transfer unless there is a documented exception
 - Reduce standing Global Administrator assignments to a tightly controlled minimum
 - Separate Intune administration from tenant-wide identity administration where possible
+- Restrict Microsoft Graph and PowerShell access to approved admin paths only
+- Enforce compliant devices or PAW-style device controls for privileged access
+- Validate token protection deployment for supported resources and Windows clients
 - Audit service principals and enterprise applications on a recurring schedule
 - Monitor all role changes, app consents, and device management mass-action events
 - Enable layered approval controls such as Multi Admin Approval where supported
@@ -179,6 +206,8 @@ Each run writes a report folder containing:
 
 - `Findings.csv`
 - `Findings.json`
+- `IdentityHardeningPolicyChecks.csv`
+- `IdentityHardeningPolicyChecks.json`
 - `PrivilegedRoleAssignments.csv`
 - `StandingPrivilegedAssignments.csv`
 - `ConditionalAccessPolicies.csv`
@@ -192,10 +221,13 @@ Each run writes a report folder containing:
 
 1. Move standing privileged admins to Entra PIM with approval and MFA.
 2. Reduce Global Administrator count.
-3. Separate Intune wipe, retire, delete, and remote actions from broad operations roles.
-4. Remove dangerous app permissions that are not explicitly required.
-5. Use Intune Multi Admin Approval wherever it is supported in your tenant.
-6. Build a custom approval workflow for mass wipe actions above a safe threshold because a standard tenant-wide batch kill switch is not exposed here.
+3. Require phishing-resistant MFA for privileged roles, admin portals, and Azure Management API.
+4. Block Device Code Flow and Authentication Transfer unless there is a documented business exception.
+5. Restrict Microsoft Graph and PowerShell access to approved users and admin paths.
+6. Separate Intune wipe, retire, delete, remote actions, and script-capable roles from broad operations roles.
+7. Remove dangerous app permissions that are not explicitly required.
+8. Validate token protection for supported resources and use Intune Multi Admin Approval wherever it is supported in your tenant.
+9. Build a custom approval workflow for mass wipe actions above a safe threshold because a standard tenant-wide batch kill switch is not exposed here.
 
 ## 📡 Detection Queries Included
 
