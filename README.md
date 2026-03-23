@@ -36,14 +36,19 @@ And in minutes they can:
 
 This starter repo is designed to make that blast-radius question measurable instead of theoretical.
 
-## 🔍 What The Starter Scanner Checks
+## 🔍 What The Expanded Scanner Checks
 
 | Area | Current checks | Why it matters |
 | --- | --- | --- |
-| `Identity & Privileged Access` | Global Administrator sprawl, privileged role membership counts, overlap between Global Admin and Intune Admin | Too many standing admins increases blast radius and weakens separation of duties |
-| `Recent Privileged Activity` | Recent directory audit events tied to role assignment and activation activity | Fast visibility into recent privilege changes helps identify active abuse paths |
-| `Application / Service Principal Risk` | High-risk Microsoft Graph application permissions such as `Directory.ReadWrite.All`, `RoleManagement.ReadWrite.Directory`, and `DeviceManagementManagedDevices.PrivilegedOperations.All` | Apps and service principals can become durable control-plane backdoors |
-| `Admin Consent Exposure` | Tenant-wide delegated grants (`AllPrincipals`) with risky scopes | Admin-consented apps can quietly expand attacker reach across the tenant |
+| `Standing Privileged Access` | Standing privileged Entra role assignments across high-value admin roles | Permanent admin access increases blast radius and removes friction attackers would otherwise face |
+| `Global Administrator Count` | Excessive Global Administrator membership | Too many Global Admins makes tenant-wide destructive actions easier after compromise |
+| `Conditional Access Coverage` | Whether enabled Conditional Access policies clearly require MFA or strong auth for privileged roles | Admin protection is weak if privileged users are not explicitly covered by strong authentication controls |
+| `Application / Service Principal Risk` | Dangerous Microsoft Graph permissions such as `Directory.ReadWrite.All`, `RoleManagement.ReadWrite.Directory`, `Policy.ReadWrite.ConditionalAccess`, and `DeviceManagementManagedDevices.PrivilegedOperations.All` | Apps can become durable control-plane backdoors with tenant-wide impact |
+| `Intune RBAC Exposure` | Intune RBAC assignments that include destructive remote actions like wipe, retire, delete, or remote operations | Endpoint control can become the delivery path for destructive actions at scale |
+| `Recent Destructive Or Privilege-Altering Activity` | Recent audit events tied to device destruction, privilege escalation, app consent, and role changes | Fast visibility into recent high-impact actions helps separate historic risk from active abuse |
+| `Manual Review Gaps` | Intune Multi Admin Approval, mass-wipe approval gates, and break-glass account hygiene | Some of the most important blast-radius controls still require human validation and process checks |
+
+> Some Conditional Access and Intune RBAC checks currently rely on Microsoft Graph beta endpoints because v1.0 coverage is still incomplete for the full blast-radius workflow.
 
 ## 🚨 Included Detection Pack
 
@@ -94,29 +99,32 @@ pwsh -NoLogo -NoProfile -Command "Set-PSRepository PSGallery -InstallationPolicy
 
 ## ⚡ Quick Start
 
-Connect to Microsoft Graph with the current read-only scopes used by the starter scanner:
+Connect to Microsoft Graph with the current read-only scopes used by the scanner:
 
 ### 🪟 Windows
 
 ```powershell
 Connect-MgGraph -Scopes @(
   "Directory.Read.All",
-  "AuditLog.Read.All",
   "RoleManagement.Read.Directory",
-  "Application.Read.All"
+  "Application.Read.All",
+  "Policy.Read.All",
+  "AuditLog.Read.All",
+  "DeviceManagementRBAC.Read.All",
+  "DeviceManagementManagedDevices.Read.All"
 )
 ```
 
 Run the assessment:
 
 ```powershell
-./scanner/M365-ControlPlane-Scanner.ps1
+./scanner/M365-ControlPlane-Scanner.ps1 -OutputPath ./reports/M365-ControlPlane-Scanner
 ```
 
-Optionally export the findings to JSON:
+Optionally change the audit lookback window:
 
 ```powershell
-./scanner/M365-ControlPlane-Scanner.ps1 -OutputPath ./reports/control-plane-findings.json
+./scanner/M365-ControlPlane-Scanner.ps1 -OutputPath ./reports/M365-ControlPlane-Scanner -RecentAuditDays 30
 ```
 
 ### 🍎 macOS / 🐧 Linux
@@ -132,35 +140,62 @@ Then connect and run:
 ```powershell
 Connect-MgGraph -Scopes @(
   "Directory.Read.All",
-  "AuditLog.Read.All",
   "RoleManagement.Read.Directory",
-  "Application.Read.All"
+  "Application.Read.All",
+  "Policy.Read.All",
+  "AuditLog.Read.All",
+  "DeviceManagementRBAC.Read.All",
+  "DeviceManagementManagedDevices.Read.All"
 )
 
-./scanner/M365-ControlPlane-Scanner.ps1
+./scanner/M365-ControlPlane-Scanner.ps1 -OutputPath ./reports/M365-ControlPlane-Scanner
 ```
 
 Or use the connection one-liner:
 
 ```bash
-pwsh -Command 'Connect-MgGraph -Scopes @("Directory.Read.All", "AuditLog.Read.All", "RoleManagement.Read.Directory", "Application.Read.All")'
+pwsh -Command 'Connect-MgGraph -Scopes @("Directory.Read.All", "RoleManagement.Read.Directory", "Application.Read.All", "Policy.Read.All", "AuditLog.Read.All", "DeviceManagementRBAC.Read.All", "DeviceManagementManagedDevices.Read.All")'
 ```
 
 ## 🔐 Authentication Notes
 
-The current starter scanner uses these delegated Microsoft Graph scopes:
+The current scanner uses these delegated Microsoft Graph scopes:
 
 - `Directory.Read.All`
-- `AuditLog.Read.All`
 - `RoleManagement.Read.Directory`
 - `Application.Read.All`
+- `Policy.Read.All`
+- `AuditLog.Read.All`
+- `DeviceManagementRBAC.Read.All`
+- `DeviceManagementManagedDevices.Read.All`
 
 Older snippets that include `AppRoleAssignment.Read.All` or `DelegatedPermissionGrant.Read.All` can fail. Those are not used by the current scanner.
 
-The signed-in account also needs supported Microsoft Entra role coverage for the APIs being queried. Microsoft currently documents:
+The signed-in account also needs supported role coverage for Entra role data, Conditional Access, applications, Intune RBAC, and audit logs. The exact least-privileged combination varies by tenant and API surface, so use a dedicated assessment account with approved read access if a narrow reader account cannot complete the full scan.
 
-- For directory audit reads: `Reports Reader`, `Security Reader`, or `Security Administrator`
-- For app permission and consent visibility checks: roles such as `Directory Readers`, `Application Administrator`, `Cloud Application Administrator`, `Privileged Role Administrator`, or `User Administrator`
+## 📦 Output Artifacts
+
+Each run writes a report folder containing:
+
+- `Findings.csv`
+- `Findings.json`
+- `PrivilegedRoleAssignments.csv`
+- `StandingPrivilegedAssignments.csv`
+- `ConditionalAccessPolicies.csv`
+- `DangerousServicePrincipalPermissions.csv`
+- `IntuneHighRiskRoleAssignments.csv`
+- `RecentDestructiveAuditEvents.csv`
+- `ManualReviewItems.json`
+- `Summary.json`
+
+## 🛠️ Practical Follow-Up Actions
+
+1. Move standing privileged admins to Entra PIM with approval and MFA.
+2. Reduce Global Administrator count.
+3. Separate Intune wipe, retire, delete, and remote actions from broad operations roles.
+4. Remove dangerous app permissions that are not explicitly required.
+5. Use Intune Multi Admin Approval wherever it is supported in your tenant.
+6. Build a custom approval workflow for mass wipe actions above a safe threshold because a standard tenant-wide batch kill switch is not exposed here.
 
 ## 📡 Detection Queries Included
 
