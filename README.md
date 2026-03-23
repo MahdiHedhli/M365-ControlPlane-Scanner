@@ -66,21 +66,27 @@ The repository also includes ready-to-deploy KQL queries in [`detections/`](dete
 
 ## 🧰 Install Requirements
 
-Install Microsoft Graph PowerShell before running the scanner.
+Make sure **PowerShell 7+** and **Microsoft Graph PowerShell** are installed before running the scanner.
 
 ### 🪟 Windows
 
 ```powershell
-Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module Microsoft.Graph -Scope CurrentUser
+winget install --id Microsoft.PowerShell --source winget
+pwsh -NoLogo -NoProfile -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module Microsoft.Graph -Scope CurrentUser"
 ```
 
 ### 🍎 macOS
 
 ```bash
+brew install powershell
 pwsh -NoLogo -NoProfile -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module Microsoft.Graph -Scope CurrentUser"
 ```
 
 ### 🐧 Linux
+
+Install PowerShell first using Microsoft's distro-specific instructions:
+
+- [Install PowerShell on Linux](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux)
 
 ```bash
 pwsh -NoLogo -NoProfile -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted; Install-Module Microsoft.Graph -Scope CurrentUser"
@@ -88,18 +94,16 @@ pwsh -NoLogo -NoProfile -Command "Set-PSRepository PSGallery -InstallationPolicy
 
 ## ⚡ Quick Start
 
-Connect to Microsoft Graph with the read-only scopes used by the starter scanner:
+Connect to Microsoft Graph with the current read-only scopes used by the starter scanner:
+
+### 🪟 Windows
 
 ```powershell
 Connect-MgGraph -Scopes @(
   "Directory.Read.All",
   "AuditLog.Read.All",
   "RoleManagement.Read.Directory",
-  "Application.Read.All",
-  "AppRoleAssignment.Read.All",
-  "DelegatedPermissionGrant.Read.All",
-  "DeviceManagementManagedDevices.Read.All",
-  "DeviceManagementRBAC.Read.All"
+  "Application.Read.All"
 )
 ```
 
@@ -114,6 +118,49 @@ Optionally export the findings to JSON:
 ```powershell
 ./scanner/M365-ControlPlane-Scanner.ps1 -OutputPath ./reports/control-plane-findings.json
 ```
+
+### 🍎 macOS / 🐧 Linux
+
+Enter PowerShell first:
+
+```bash
+pwsh
+```
+
+Then connect and run:
+
+```powershell
+Connect-MgGraph -Scopes @(
+  "Directory.Read.All",
+  "AuditLog.Read.All",
+  "RoleManagement.Read.Directory",
+  "Application.Read.All"
+)
+
+./scanner/M365-ControlPlane-Scanner.ps1
+```
+
+Or use the connection one-liner:
+
+```bash
+pwsh -Command 'Connect-MgGraph -Scopes @("Directory.Read.All", "AuditLog.Read.All", "RoleManagement.Read.Directory", "Application.Read.All")'
+```
+
+## 🔐 Authentication Notes
+
+The current starter scanner uses these delegated Microsoft Graph scopes:
+
+- `Directory.Read.All`
+- `AuditLog.Read.All`
+- `RoleManagement.Read.Directory`
+- `Application.Read.All`
+
+Older snippets that include `AppRoleAssignment.Read.All` or `DelegatedPermissionGrant.Read.All` can fail. Those are not used by the current scanner.
+
+The signed-in account also needs supported Microsoft Entra role coverage for the APIs being queried. Microsoft currently documents:
+
+- For directory audit reads: `Reports Reader`, `Security Reader`, or `Security Administrator`
+- For app permission and consent visibility checks: roles such as `Directory Readers`, `Application Administrator`, `Cloud Application Administrator`, `Privileged Role Administrator`, or `User Administrator`
 
 ## 📡 Detection Queries Included
 

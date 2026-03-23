@@ -14,11 +14,7 @@ $RequiredScopes = @(
     "Directory.Read.All",
     "AuditLog.Read.All",
     "RoleManagement.Read.Directory",
-    "Application.Read.All",
-    "AppRoleAssignment.Read.All",
-    "DelegatedPermissionGrant.Read.All",
-    "DeviceManagementManagedDevices.Read.All",
-    "DeviceManagementRBAC.Read.All"
+    "Application.Read.All"
 )
 
 $RiskyGraphPermissions = @(
